@@ -20,3 +20,9 @@ Thumbs.db
 
 # Chroma 本地数据
 chroma_db/
+
+# Playwright 测试输出
+.playwright-cli/
+*.png
+*.yaml
+before.png
