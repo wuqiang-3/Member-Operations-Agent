@@ -81,13 +81,13 @@ PYTHONPATH=src streamlit run src/frontend/app.py
 
 ## 系统架构
 
-<img src="系统架构图.svg" alt="系统架构图" width="100%">
+![系统架构](https://raw.githubusercontent.com/wuqiang-3/Member-Operations-Agent/main/architecture.svg)
 
 ---
 
 ## 技术选型
 
-<img src="技术选型对比表.svg" alt="技术选型对比表" width="100%">
+![技术选型](https://raw.githubusercontent.com/wuqiang-3/Member-Operations-Agent/main/tech-stack.svg)
 
 ---
 
