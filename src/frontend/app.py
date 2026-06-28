@@ -44,12 +44,16 @@ def _render_segmentation(data: dict, key_prefix: str = ""):
     if data.get("overall_recommendation"):
         st.info(data["overall_recommendation"])
 
-    sizes = [s.get("percentage", 0) for s in segments]
+    # 漏斗图：用实际人数，自定义百分比（占总人数）
+    sizes = [s.get("size", 0) for s in segments]
     names = [s.get("name", "") for s in segments]
+    total = sum(sizes)
+    pct_texts = [f"{s/total*100:.1f}%" if total > 0 else "0%" for s in sizes]
 
     fig = go.Figure(go.Funnel(
         y=names, x=sizes,
-        textinfo="value+percent initial",
+        textinfo="value+text",
+        text=pct_texts,
         marker={"color": ["#F59E0B", "#3B82F6", "#14B8A6", "#8B5CF6", "#EC4899", "#F43F5E"]},
     ))
     fig.update_layout(height=300, margin=dict(l=20, r=20, t=10, b=10),
@@ -62,7 +66,8 @@ def _render_segmentation(data: dict, key_prefix: str = ""):
             with st.container(border=True):
                 emoji = ["👑", "🟢", "🟡", "🔵", "🟠", "🔴"][i % 6]
                 st.subheader(f"{emoji} {seg.get('name', '')}")
-                st.metric("规模", f"{seg.get('size', 0):,}人", f"{seg.get('percentage', 0)}%")
+                st.metric("规模", f"{seg.get('size', 0):,}人")
+                st.caption(f"占比: {seg.get('percentage', 0)}%")
                 st.caption(f"策略: {seg.get('strategy_direction', '')}")
                 chs = seg.get("channels", [])
                 if chs:
