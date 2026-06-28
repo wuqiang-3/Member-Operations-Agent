@@ -1,6 +1,6 @@
 # 🤖 会员运营智能体
 
-> 基于 DeepSeek V3 + LangGraph 的 AI 会员运营助手  
+> 基于 DeepSeek V4 + LangGraph 的 AI 会员运营助手  
 > 自然语言驱动的 CRM Agent，自动识别意图、提取参数、执行分析
 
 ---
@@ -131,13 +131,3 @@ event: done    → 完成
 - DeepSeek API Key 通过 `.env` 管理，不硬编码
 
 ---
-
-## 进度
-
-| Phase | 状态 |
-|-------|------|
-| Phase 0 原型设计 | ✅ |
-| Phase 1 基础设施 | ✅ |
-| Phase 2 Agent 核心 | ✅ |
-| Phase 3 Streamlit 前端 | ✅ |
-| Phase 4 联调交付 | ✅ |
