@@ -15,8 +15,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
-# 确保 agent 模块可导入
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+# 确保 agent 模块可导入 — 添加 src/ 到 Python 路径
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 app = FastAPI(title="会员运营智能体 API", version="0.2.0")
 
@@ -115,11 +115,13 @@ async def _run_agent(message: str) -> AsyncGenerator[dict, None]:
 
                     if result_data:
                         intent = node_output.get("intent", "segmentation")
+                        error_msg = node_output.get("error_message", "")
                         yield {
                             "event": "result",
                             "data": json.dumps({
                                 "type": intent,
                                 "result": result_data,
+                                "error": error_msg,
                                 "timestamp": time.time(),
                             }, ensure_ascii=False),
                         }
@@ -164,6 +166,7 @@ async def agent_chat(req: ChatRequest):
             return {
                 "type": intent,
                 "result": result_data,
+                "error": result.get("error_message", ""),
                 "timestamp": time.time(),
             }
         except Exception as e:

@@ -13,6 +13,7 @@ load_dotenv()
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 from agent.prompts.templates import COPYWRITING_PROMPT
+from agent.llm_utils import safe_invoke, parse_llm_json
 
 
 def _get_llm():
@@ -67,17 +68,13 @@ class CopywritingTool:
             examples=examples or "（暂无历史文案参考）",
         )
 
-        try:
-            llm = _get_llm()
-            response = llm.invoke(prompt)
-            content = response.content.strip()
-            if content.startswith("```"):
-                content = content.split("\n", 1)[-1]
-                if content.endswith("```"):
-                    content = content[:-3]
-            result = json.loads(content)
-        except Exception:
-            result = self._fallback_variants(target_segment, goal, tone)
+        llm = _get_llm()
+        response, error = safe_invoke(llm, prompt, label="文案生成")
+
+        if error:
+            return self._fallback_variants(target_segment, goal, tone)
+
+        result = parse_llm_json(response, self._fallback_variants(target_segment, goal, tone))
 
         return result
 

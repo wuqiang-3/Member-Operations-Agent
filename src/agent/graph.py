@@ -3,6 +3,7 @@ Agent 核心图结构 — LangGraph StateGraph
 """
 import os
 import json
+import logging
 from typing import Literal
 
 from dotenv import load_dotenv
@@ -17,6 +18,10 @@ from agent.prompts.templates import (
     COPYWRITING_PROMPT,
     PREDICTION_PROMPT,
 )
+from agent.llm_utils import safe_invoke, parse_llm_json
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("agent.graph")
 
 load_dotenv()
 
@@ -38,31 +43,26 @@ def understand_intent(state: AgentState) -> dict:
     query = state.get("user_query", "")
     prompt = INTENT_RECOGNITION_PROMPT.format(user_query=query)
 
-    response = llm.invoke(prompt)
-    content = response.content.strip()
+    response, error = safe_invoke(llm, prompt, label="意图识别")
 
-    # 清理 markdown 代码块
-    if content.startswith("```"):
-        content = content.split("\n", 1)[-1]
-        if content.endswith("```"):
-            content = content[:-3]
-
-    try:
-        result = json.loads(content)
-    except json.JSONDecodeError:
-        # 回退：基于关键词判断
+    if error:
+        # LLM 调用失败，关键词回退
+        logger.warning(f"意图识别 LLM 调用失败，使用关键词回退: {error}")
         intent = "segmentation"
         if any(w in query for w in ["文案", "推送", "生成"]):
             intent = "copywriting"
         elif any(w in query for w in ["预测", "预估", "效果", "ROI"]):
             intent = "prediction"
         result = {"intent": intent, "confidence": 0.5, "params": {}}
+    else:
+        result = parse_llm_json(response, {"intent": "segmentation", "confidence": 0.5, "params": {}})
 
     return {
         "intent": result.get("intent", "segmentation"),
         "intent_confidence": result.get("confidence", 0.5),
         "extracted_params": result.get("params", {}),
         "current_step": "understand_intent",
+        "error_message": error,
         "messages": [AIMessage(content=f"✅ 识别意图：{result.get('intent', '')}，置信度 {result.get('confidence', 0):.0%}")],
     }
 
@@ -160,6 +160,7 @@ def generate_report(state: AgentState) -> dict:
         "done": True,
         "current_step": "generate_report",
         "intent": intent,
+        "error_message": state.get("error_message", ""),
         "segmentation_result": state.get("segmentation_result", {}),
         "copywriting_result": state.get("copywriting_result", {}),
         "prediction_result": state.get("prediction_result", {}),

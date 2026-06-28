@@ -16,6 +16,7 @@ load_dotenv()
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 from agent.prompts.templates import SEGMENTATION_PROMPT
+from agent.llm_utils import safe_invoke, parse_llm_json, safe_json_dumps
 
 # 延迟导入避免循环
 def _get_llm():
@@ -111,29 +112,33 @@ class SegmentationTool:
 
     def _generate_strategies(self, segments: list[dict], industry: str) -> dict:
         """调用 LLM 生成策略建议"""
-        segments_json = json.dumps(segments, ensure_ascii=False, indent=2)
+        segments_json = safe_json_dumps(segments, max_chars=15_000)
         prompt = SEGMENTATION_PROMPT.format(
             industry=industry or "鞋服",
             segments_json=segments_json,
         )
 
-        try:
-            llm = _get_llm()
-            response = llm.invoke(prompt)
-            content = response.content.strip()
-            if content.startswith("```"):
-                content = content.split("\n", 1)[-1]
-                if content.endswith("```"):
-                    content = content[:-3]
-            result = json.loads(content)
-        except Exception:
-            result = {
-                "overall_recommendation": "基于RFM分析自动生成",
+        llm = _get_llm()
+        response, error = safe_invoke(llm, prompt, label="分层策略生成")
+
+        if error:
+            # LLM 调用失败，使用基于规则的回退
+            return {
+                "overall_recommendation": f"基于RFM分析自动生成（LLM调用异常: {error[:80]}）",
                 "segments": [
                     {**s, "strategy_direction": "精细化运营", "channels": ["企微"], "offer_type": "满减券", "expected_conversion": 0.15}
                     for s in segments
                 ],
             }
+
+        fallback = {
+            "overall_recommendation": "基于RFM分析自动生成",
+            "segments": [
+                {**s, "strategy_direction": "精细化运营", "channels": ["企微"], "offer_type": "满减券", "expected_conversion": 0.15}
+                for s in segments
+            ],
+        }
+        result = parse_llm_json(response, fallback)
 
         # 注入原始聚类数据
         result["segments"] = [

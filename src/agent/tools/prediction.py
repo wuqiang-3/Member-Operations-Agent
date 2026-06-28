@@ -13,6 +13,7 @@ load_dotenv()
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 from agent.prompts.templates import PREDICTION_PROMPT
+from agent.llm_utils import safe_invoke, parse_llm_json, safe_json_dumps
 
 
 def _get_llm():
@@ -64,9 +65,9 @@ class PredictionTool:
         industry = self._get_industry(campaigns)
         benchmark = INDUSTRY_BENCHMARKS.get(industry, INDUSTRY_BENCHMARKS["鞋服"])
 
-        # 检索相似历史活动
+        # 检索相似历史活动（限制 top 5，减少 token 消耗）
         similar = self._find_similar(campaigns, target_segment, offer_type)
-        similar_json = json.dumps(similar[:10], ensure_ascii=False, indent=2)
+        similar_json = safe_json_dumps(similar[:5], max_chars=8_000)
 
         # LLM 推理
         prompt = PREDICTION_PROMPT.format(
@@ -77,17 +78,13 @@ class PredictionTool:
             current_campaign=current_campaign,
         )
 
-        try:
-            llm = _get_llm()
-            response = llm.invoke(prompt)
-            content = response.content.strip()
-            if content.startswith("```"):
-                content = content.split("\n", 1)[-1]
-                if content.endswith("```"):
-                    content = content[:-3]
-            result = json.loads(content)
-        except Exception:
-            result = self._fallback_prediction(target_segment)
+        llm = _get_llm()
+        response, error = safe_invoke(llm, prompt, label="效果预测")
+
+        if error:
+            return self._fallback_prediction(target_segment)
+
+        result = parse_llm_json(response, self._fallback_prediction(target_segment))
 
         return result
 
