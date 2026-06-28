@@ -35,8 +35,8 @@ fi
 
 # 4. 清理旧进程
 echo "🧹 清理旧进程..."
-pkill -f "uvicorn.*main:app" 2>/dev/null || true
-pkill -f "streamlit run" 2>/dev/null || true
+lsof -ti :8000 | xargs kill -9 2>/dev/null || true
+lsof -ti :8501 | xargs kill -9 2>/dev/null || true
 sleep 1
 
 # 5. 启动后端
@@ -48,7 +48,7 @@ sleep 2
 
 # 验证后端
 if curl -s http://localhost:8000/api/health > /dev/null 2>&1; then
-    echo "   ✅ 后端已启动: http://localhost:8000"
+    echo "   ✅ 后端已启动: http://localhost:8000 (API: /api/health)"
 else
     echo "   ❌ 后端启动失败"
     exit 1
@@ -56,7 +56,8 @@ fi
 
 # 6. 启动前端
 echo "🎨 启动前端 (Streamlit)..."
-PYTHONPATH="$PROJECT_DIR/src" $PYTHON -m streamlit run src/frontend/app.py --server.port 8501 &
+PYTHONPATH="$PROJECT_DIR/src" $PYTHON -m streamlit run src/frontend/app.py \
+    --server.port 8501 --server.headless true &
 FRONTEND_PID=$!
 sleep 3
 
