@@ -1,0 +1,38 @@
+- generic [ref=e2]:
+  - generic [ref=e21]:
+    - heading "🤖 会员运营智能体" [level=2] [ref=e26]
+    - separator [ref=e31]
+    - heading "💡 试试这样说" [level=3] [ref=e36]
+    - button "📊 帮我给百丽品牌做会员分层，分析近90天数据..." [ref=e142] [cursor=pointer]:
+      - paragraph [ref=e146]: 📊 帮我给百丽品牌做会员分层，分析近90天数据...
+    - button "✍️ 给高价值活跃会员生成促活文案，调性高端轻奢..." [ref=e148] [cursor=pointer]:
+      - paragraph [ref=e152]: ✍️ 给高价值活跃会员生成促活文案，调性高端轻奢...
+    - button "📈 预测满399减60活动效果，目标高价值会员，企微触达7天..." [ref=e154] [cursor=pointer]:
+      - paragraph [ref=e158]: 📈 预测满399减60活动效果，目标高价值会员，企微触达7天...
+    - separator [ref=e47]
+  - generic [ref=e3]:
+    - banner [ref=e50]:
+      - generic [ref=e53]:
+        - button "Deploy" [ref=e63] [cursor=pointer]:
+          - generic [ref=e65]: Deploy
+        - button "Main menu" [ref=e67] [cursor=pointer]:
+          - img [ref=e68]
+    - generic [ref=e71]:
+      - generic [ref=e73]:
+        - generic [ref=e172]:
+          - generic [ref=e175]: face
+          - generic "Chat message from user" [ref=e176]:
+            - paragraph [ref=e182]: 帮我给百丽品牌做会员分层
+        - generic [ref=e184]:
+          - generic [ref=e187]: smart_toy
+          - generic "Chat message from assistant" [ref=e188]:
+            - alert [ref=e192]:
+              - generic [ref=e194]:
+                - generic [ref=e197]: ⚠️
+                - paragraph [ref=e199]:
+                  - text: 后端未启动，请先运行
+                  - code [ref=e200]: python src/backend/main.py
+      - generic [ref=e161]:
+        - textbox "用自然语言描述你的需求..." [active] [ref=e165]
+        - button "Send message" [disabled] [ref=e167]:
+          - img [ref=e168]

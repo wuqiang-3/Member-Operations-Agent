@@ -1,0 +1,62 @@
+- generic [ref=e2]:
+  - generic [ref=e32]:
+    - heading "🤖 会员运营智能体" [level=2] [ref=e37]
+    - separator [ref=e42]
+    - heading "💡 试试这样说" [level=3] [ref=e47]
+    - button "📊 帮我给百丽品牌做会员分层，分析近90天数据..." [ref=e50] [cursor=pointer]:
+      - paragraph [ref=e54]: 📊 帮我给百丽品牌做会员分层，分析近90天数据...
+    - button "✍️ 给高价值活跃会员生成促活文案，调性高端轻奢..." [ref=e57] [cursor=pointer]:
+      - paragraph [ref=e61]: ✍️ 给高价值活跃会员生成促活文案，调性高端轻奢...
+    - button "📈 预测满399减60活动效果，目标高价值会员，企微触达7天..." [ref=e64] [cursor=pointer]:
+      - paragraph [ref=e68]: 📈 预测满399减60活动效果，目标高价值会员，企微触达7天...
+    - separator [ref=e73]
+  - generic [ref=e3]:
+    - banner [ref=e6]:
+      - generic [ref=e9]:
+        - generic [ref=e158]:
+          - img "Running..." [ref=e159]:
+            - img [ref=e160]
+          - button "Stop" [ref=e164] [cursor=pointer]
+        - button "Deploy" [ref=e19] [cursor=pointer]:
+          - generic [ref=e21]: Deploy
+        - button "Main menu" [ref=e23] [cursor=pointer]:
+          - img [ref=e24]
+    - generic [ref=e76]:
+      - generic [ref=e78]:
+        - generic [ref=e166]:
+          - generic [ref=e169]: face
+          - generic "Chat message from user" [ref=e170]:
+            - paragraph [ref=e176]: 帮我给百丽品牌做会员分层
+        - generic [ref=e178]:
+          - generic [ref=e181]: smart_toy
+          - generic "Chat message from assistant"
+        - separator [ref=e94]
+        - generic [ref=e96]:
+          - generic [ref=e98]:
+            - heading "📊 会员分层" [level=3] [ref=e104]:
+              - text: 📊 会员分层
+              - generic [ref=e105]:
+                - link "Link to heading":
+                  - /url: "#557bbd85"
+                  - img
+            - paragraph [ref=e110]: 帮你分析品牌会员数据，自动聚类分层并给出差异化运营策略
+          - generic [ref=e112]:
+            - heading "✍️ 文案生成" [level=3] [ref=e118]:
+              - text: ✍️ 文案生成
+              - generic [ref=e119]:
+                - link "Link to heading":
+                  - /url: "#a23f398c"
+                  - img
+            - paragraph [ref=e124]: 根据目标群体和品牌调性，生成多版本个性化营销文案
+          - generic [ref=e126]:
+            - heading "📈 效果预测" [level=3] [ref=e132]:
+              - text: 📈 效果预测
+              - generic [ref=e133]:
+                - link "Link to heading":
+                  - /url: "#8033f98e"
+                  - img
+            - paragraph [ref=e138]: 基于历史数据预测活动转化率、ROI等关键指标，识别风险
+      - generic [ref=e147]:
+        - textbox "用自然语言描述你的需求..." [active] [ref=e151]
+        - button "Send message" [disabled] [ref=e153]:
+          - img [ref=e154]

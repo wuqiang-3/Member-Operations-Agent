@@ -22,7 +22,6 @@ API_URL = "http://localhost:8000/api/agent/chat"
 # =========== Sidebar ===========
 with st.sidebar:
     st.markdown("## 🤖 会员运营智能体")
-    st.caption("DeepSeek V3 + LangGraph")
 
     st.divider()
 
@@ -37,8 +36,6 @@ with st.sidebar:
             st.session_state.pending_message = ex
 
     st.divider()
-    st.caption(f"🟢 API: :8000")
-    st.caption(f"📦 LangGraph + DeepSeek V3")
 
 # =========== Init ===========
 if "messages" not in st.session_state:
@@ -53,18 +50,31 @@ for msg in st.session_state.messages:
 
         if role == "user":
             st.markdown(msg["content"])
-        elif "steps" in msg:
-            # Agent response with steps
-            for step in msg["steps"]:
-                st.caption(f"✅ {step}")
-            if msg.get("result_display"):
-                st.markdown(msg["result_display"])
-                if msg.get("result_data"):
-                    _render_result(msg["result_data"])
+        elif msg.get("result_data"):
+            result = msg["result_data"]
+            rtype = result.get("type", "")
+            data = result.get("result", {})
+
+            if rtype == "segmentation":
+                if data.get("overall_recommendation"):
+                    st.info(data["overall_recommendation"])
+                segs = data.get("segments", [])
+                st.success(f"✅ 分层完成，共 {len(segs)} 个分层")
+                _render_segmentation(data)
+
+            elif rtype == "copywriting":
+                if data.get("recommendation"):
+                    st.info(data["recommendation"])
+                st.success(f"✅ 生成 {len(data.get('variants', []))} 版文案")
+                _render_copywriting(data)
+
+            elif rtype == "prediction":
+                st.success("✅ 预测完成")
+                _render_prediction(data)
         elif "error" in msg:
             st.error(msg["content"])
         else:
-            st.markdown(msg["content"])
+            st.markdown(msg.get("content", ""))
 
 
 def _render_result(result: dict):
@@ -182,87 +192,49 @@ def _render_prediction(data: dict):
 
 # =========== Chat Input & Send ===========
 def process_message(prompt: str):
-    """发送消息到后端并流式渲染"""
+    """发送消息到后端"""
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
         try:
-            resp = requests.post(
-                API_URL,
-                json={"message": prompt, "stream": True},
-                stream=True,
-                timeout=120,
-            )
+            with st.spinner("Agent 思考中..."):
+                resp = requests.post(
+                    API_URL,
+                    json={"message": prompt, "stream": False},
+                    timeout=120,
+                )
+                resp.raise_for_status()
+                result = resp.json()
 
-            steps = []
-            result_data = None
-            result_display = ""
-            placeholder = st.empty()
+            rtype = result.get("type", "")
+            data = result.get("result", {})
 
-            for line in resp.iter_lines():
-                if not line:
-                    continue
-                line_str = line.decode("utf-8")
+            if rtype == "segmentation":
+                segs = data.get("segments", [])
+                if data.get("overall_recommendation"):
+                    st.info(data["overall_recommendation"])
+                st.success(f"✅ 分层完成，共 {len(segs)} 个分层")
+                _render_segmentation(data)
 
-                if line_str.startswith("data:"):
-                    try:
-                        event = json.loads(line_str[5:].strip())
-                        event_type = event.get("event", "")
-                        data_str = event.get("data", "{}")
-                        data = json.loads(data_str) if isinstance(data_str, str) else data_str
+            elif rtype == "copywriting":
+                variants = data.get("variants", [])
+                st.success(f"✅ 生成 {len(variants)} 版文案")
+                _render_copywriting(data)
 
-                        if event_type == "step":
-                            status = data.get("status", "")
-                            label = data.get("label", "")
-                            detail = data.get("detail", "")
-                            steps.append(f"{label}: {detail}")
-                            with placeholder.container():
-                                for s in steps:
-                                    st.caption(f"✅ {s}")
+            elif rtype == "prediction":
+                st.success("✅ 预测完成")
+                _render_prediction(data)
 
-                        elif event_type == "result":
-                            result_data = data
-                            rtype = data.get("type", "")
+            elif rtype == "error":
+                st.error(data.get("message", "执行出错"))
 
-                            if rtype == "segmentation":
-                                segs = data.get("result", {}).get("segments", [])
-                                result_display = f"### 📊 分层完成，共 {len(segs)} 个分层\n"
-                                for s in segs:
-                                    result_display += f"- **{s.get('name', '')}**: {s.get('size', 0):,}人 ({s.get('percentage', 0)}%)\n"
-
-                            elif rtype == "copywriting":
-                                vars_list = data.get("result", {}).get("variants", [])
-                                result_display = f"### ✍️ 生成 {len(vars_list)} 版文案\n"
-                                for v in vars_list:
-                                    result_display += f"- **{v.get('type', '')}**: {v.get('title', '')}\n"
-
-                            elif rtype == "prediction":
-                                m = data.get("result", {}).get("metrics", {})
-                                result_display = "### 📈 效果预测\n"
-                                for k, v in m.items():
-                                    result_display += f"- **{k}**: {v.get('value', 0)}\n"
-
-                            elif rtype == "error":
-                                result_display = f"❌ {data.get('result', {}).get('message', '执行出错')}"
-
-                            with placeholder.container():
-                                for s in steps:
-                                    st.caption(f"✅ {s}")
-                                st.markdown(result_display)
-                                if result_data:
-                                    _render_result(result_data)
-
-                    except (json.JSONDecodeError, KeyError):
-                        pass
-
-            # Save to session
+            # Save
             st.session_state.messages.append({
                 "role": "assistant",
-                "steps": steps,
-                "result_display": result_display,
-                "result_data": result_data,
+                "result_type": rtype,
+                "result_data": result,
             })
 
         except requests.exceptions.ConnectionError:
@@ -270,7 +242,7 @@ def process_message(prompt: str):
             st.error(error_msg)
             st.session_state.messages.append({"role": "assistant", "error": True, "content": error_msg})
         except Exception as e:
-            error_msg = f"❌ 调用失败: {str(e)}"
+            error_msg = f"❌ 调用失败: {str(e)[:200]}"
             st.error(error_msg)
             st.session_state.messages.append({"role": "assistant", "error": True, "content": error_msg})
 

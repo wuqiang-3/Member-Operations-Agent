@@ -144,8 +144,36 @@ async def _run_agent(message: str) -> AsyncGenerator[dict, None]:
 
 @app.post("/api/agent/chat")
 async def agent_chat(req: ChatRequest):
-    """Agent 对话入口 — SSE 流式响应"""
+    """Agent 对话入口"""
+    from agent.graph import graph
 
+    # 非流式模式：直接返回 JSON
+    if not req.stream:
+        initial_state = {
+            "user_query": req.message,
+            "messages": [],
+            "intent": "", "intent_confidence": 0.0, "extracted_params": {},
+            "retrieved_members": [], "retrieved_campaigns": [],
+            "segmentation_result": {}, "copywriting_result": {}, "prediction_result": {},
+            "current_step": "", "error_message": "", "done": False,
+        }
+        try:
+            result = graph.invoke(initial_state)
+            intent = result.get("intent", "segmentation")
+            result_data = result.get(f"{intent}_result", {})
+            return {
+                "type": intent,
+                "result": result_data,
+                "timestamp": time.time(),
+            }
+        except Exception as e:
+            return {
+                "type": "error",
+                "result": {"error": str(e), "message": "Agent 执行出错"},
+                "timestamp": time.time(),
+            }
+
+    # 流式模式：SSE
     async def event_generator():
         async for event in _run_agent(req.message):
             yield event
