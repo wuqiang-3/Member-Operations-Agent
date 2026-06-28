@@ -17,6 +17,17 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# 隐藏 Streamlit 默认工具栏（Deploy / Running / Stop）
+hide_toolbar = """
+<style>
+  [data-testid="stToolbar"] {display: none !important;}
+  header[data-testid="stHeader"] {display: none !important;}
+  #MainMenu {visibility: hidden;}
+  footer {visibility: hidden;}
+</style>
+"""
+st.markdown(hide_toolbar, unsafe_allow_html=True)
+
 API_URL = "http://localhost:8000/api/agent/chat"
 
 
