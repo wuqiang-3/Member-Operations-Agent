@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent 执行过程演示 — 会员运营智能体 v2</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F1A2E; --card: #1E293B; --steel: #1D2D44;
+    --text: #F1F5F9; --text2: #94A3B8; --text3: #64748B;
+    --blue: #3B82F6; --green: #22C55E; --amber: #F59E0B;
+    --rose: #F43F5E; --teal: #14B8A6; --border: #334155;
+    --radius: 12px; --radius-sm: 8px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans SC', sans-serif; background: var(--bg);
+    color: var(--text); padding: 40px; max-width: 960px; margin: 0 auto;
+  }
+  h1 { font-family: 'DM Sans', sans-serif; font-size: 22px; margin-bottom: 4px; }
+  .subtitle { color: var(--text3); font-size: 13px; margin-bottom: 32px; }
+
+  .scene-tabs { display: flex; gap: 4px; margin-bottom: 28px; }
+  .scene-tab {
+    padding: 8px 18px; border-radius: var(--radius-sm); font-size: 13px;
+    cursor: pointer; border: 1px solid var(--border); color: var(--text3);
+    background: transparent; font-family: 'Noto Sans SC', sans-serif; transition: all 0.15s;
+  }
+  .scene-tab:hover { border-color: var(--text3); color: var(--text2); }
+  .scene-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+  /* Natural language input display */
+  .nl-query {
+    background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(20,184,166,0.05));
+    border: 1px solid rgba(59,130,246,0.2); border-radius: var(--radius);
+    padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: flex-start; gap: 12px;
+  }
+  .nl-query .icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .nl-query .text { font-size: 14px; color: var(--text); line-height: 1.6; }
+  .nl-query .label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+
+  /* Intent extraction */
+  .intent-block {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 20px;
+  }
+  .intent-title {
+    font-size: 11px; font-weight: 600; color: var(--amber);
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .intent-title .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); }
+  .param-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+  }
+  .param-card {
+    background: var(--steel); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 14px;
+  }
+  .param-card .param-key {
+    font-size: 10px; color: var(--text3); text-transform: uppercase;
+    letter-spacing: 0.05em; margin-bottom: 6px;
+  }
+  .param-card .param-val {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    color: var(--blue-bright); font-weight: 500;
+  }
+
+  /* Execution flow */
+  .flow-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+
+  .flow-step {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 16px 20px; border-radius: var(--radius); background: var(--card);
+    border: 1px solid var(--border); opacity: 0; transform: translateX(-10px);
+    animation: slideIn 0.35s ease forwards;
+  }
+  .flow-step:nth-child(1) { animation-delay: 0.05s; }
+  .flow-step:nth-child(2) { animation-delay: 0.25s; }
+  .flow-step:nth-child(3) { animation-delay: 0.45s; }
+  .flow-step:nth-child(4) { animation-delay: 0.65s; }
+  .flow-step:nth-child(5) { animation-delay: 0.85s; }
+
+  @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+
+  .step-num {
+    width: 36px; height: 36px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-weight: 700;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; flex-shrink: 0; margin-top: 2px;
+  }
+  .step-num.done { background: rgba(34,197,94,0.18); color: var(--green); }
+  .step-num.running { background: rgba(59,130,246,0.2); color: var(--blue); animation: pulse 1.8s infinite; }
+  .step-num.wait { background: rgba(100,116,139,0.15); color: var(--text3); }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+  .step-body { flex: 1; }
+  .step-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .step-desc { font-size: 12px; color: var(--text2); line-height: 1.6; }
+  .step-meta {
+    margin-top: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--text3); background: var(--steel); padding: 8px 12px;
+    border-radius: 6px; white-space: pre-line; line-height: 1.6;
+  }
+  .step-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 10px; font-weight: 600;
+  }
+  .badge-data { background: rgba(20,184,166,0.2); color: var(--teal); }
+  .badge-progress { background: rgba(59,130,246,0.2); color: var(--blue); }
+  .badge-llm { background: rgba(245,158,11,0.2); color: var(--amber); }
+
+  .result-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+    opacity: 0; animation: fadeUp 0.5s ease 1.0s forwards;
+  }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  .result-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+
+  .delay-control { display: flex; gap: 8px; margin-bottom: 20px; align-items: center; }
+  .delay-control button {
+    padding: 6px 14px; border-radius: var(--radius-sm); font-size: 12px;
+    cursor: pointer; border: 1px solid var(--border); color: var(--text2);
+    background: var(--steel); font-family: 'Noto Sans SC', sans-serif;
+  }
+  .delay-control button:hover { border-color: var(--blue); color: var(--blue); }
+  .delay-control button.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .delay-control .label { font-size: 11px; color: var(--text3); margin-right: 4px; }
+
+  .proto-badge {
+    position: fixed; top: 16px; right: 16px;
+    background: var(--amber); color: #000; font-size: 10px; font-weight: 700;
+    padding: 4px 10px; border-radius: 12px; z-index: 100;
+  }
+</style>
+</head>
+<body>
+<div class="proto-badge">v2 · 自然语言</div>
+
+<h1>🤖 Agent 执行过程演示</h1>
+<p class="subtitle">用户自然语言输入 → 意图识别 → 参数提取 → 逐步执行 → 结果输出</p>
+
+<div class="scene-tabs">
+  <button class="scene-tab active" data-scene="seg">📊 场景一：会员分层</button>
+  <button class="scene-tab" data-scene="copy">✍️ 场景二：文案生成</button>
+  <button class="scene-tab" data-scene="pred">📈 场景三：效果预测</button>
+</div>
+
+<div id="flow-area"></div>
+
+<script>
+const sceneQueries = {
+  seg: "帮我给百丽品牌做会员分层，分析近90天数据",
+  copy: "给高价值活跃会员生成促活文案，品牌调性要高端轻奢感",
+  pred: "预测一下满399减60的活动效果，目标高价值会员，企微触达，周期7天"
+};
+
+const flowData = {
+  seg: {
+    params: [
+      {key:"意图", val:"会员分层 (segmentation)"},
+      {key:"品牌", val:"百丽集团 (belle)"},
+      {key:"分析周期", val:"近90天"},
+      {key:"分层数", val:"6层"},
+      {key:"数据规模", val:"~146,000条"}
+    ],
+    steps: [
+      {status:"done",badge:"badge-data",title:"理解意图 + 提取参数",
+       desc:"从「帮我给百丽品牌做会员分层，分析近90天数据」中提取：品牌=百丽、周期=90天、意图=segmentation",
+       meta:'intent = "segmentation"\nbrand_id = "belle"\nperiod_days = 90\nn_clusters = 6'},
+      {status:"done",badge:"badge-data",title:"拉取会员行为数据",
+       desc:"从 Mock 数据库查询百丽品牌近90天的会员消费记录",
+       meta:"SELECT * FROM mock_orders\nWHERE brand_id='belle'\n  AND order_date >= '2026-03-30'\n→ 146,000 条，耗时 0.8s"},
+      {status:"running",badge:"badge-progress",title:"计算RFM + K-Means聚类",
+       desc:"对全量会员计算 Recency/Frequency/Monetary，标准化后 K-Means 聚类为 6 层",
+       meta:"R 均值: 34天 | F 均值: 2.8次 | M 均值: ¥1,240\nK-Means n=6, silhouette=0.72\n→ 聚类完成，耗时 1.2s"},
+      {status:"wait",badge:"badge-llm",title:"DeepSeek V3 策略生成",
+       desc:"将分层结果 + 品牌行业属性发送给 DeepSeek，生成差异化运营策略建议",
+       meta:"Prompt: 2,847 tokens\nFew-shot: 3 示例\n预计耗时: 3-5s（流式）"},
+      {status:"wait",badge:"",title:"组装结果 → 返回前端",
+       desc:"解析 LLM JSON 输出，组装为分层报告 + 策略卡片，SSE 推送到前端渲染",
+       meta:"输出: JSON\n包含 6 层完整策略\n→ 前端渲染"}
+    ]
+  },
+  copy: {
+    params: [
+      {key:"意图", val:"文案生成 (copywriting)"},
+      {key:"目标群体", val:"高价值活跃会员"},
+      {key:"活动目标", val:"促活"},
+      {key:"品牌调性", val:"高端轻奢"},
+      {key:"变体数", val:"3版"}
+    ],
+    steps: [
+      {status:"done",badge:"badge-data",title:"理解意图 + 提取参数",
+       desc:"从「给高价值活跃会员生成促活文案，品牌调性要高端轻奢感」中提取所有参数",
+       meta:'intent = "copywriting"\ntarget = "高价值活跃会员"\ngoal = "促活"\ntone = "高端轻奢"\nn_variants = 3'},
+      {status:"done",badge:"badge-data",title:"向量检索历史高转化文案",
+       desc:"从 Chroma 向量数据库检索 5 条相似会员的高转化文案作为 Few-shot 示例",
+       meta:"vector_store.search(\n  query='高价值 促活 高端轻奢',\n  top_k=5,\n  filter='conversion>0.25'\n)\n→ 召回 5 条，最高转化 38%"},
+      {status:"running",badge:"badge-llm",title:"构建 Few-shot Prompt + DeepSeek 生成",
+       desc:"拼装 Prompt（含 5 条示例），调用 DeepSeek V3 流式生成 3 版文案变体",
+       meta:"Prompt: 3,124 tokens\nFew-shot: 5 条\n→ 流式生成中..."},
+      {status:"wait",badge:"badge-progress",title:"转化率预测评估",
+       desc:"基于文案特征（长度/情感倾向/利益点密度）+ 历史数据，预测各版转化率",
+       meta:"文案A（情感共鸣）→ 预测 28%\n文案B（利益驱动）→ 预测 35%\n文案C（社交裂变）→ 预测 22%"}
+    ]
+  },
+  pred: {
+    params: [
+      {key:"意图", val:"效果预测 (prediction)"},
+      {key:"目标人群", val:"高价值活跃会员"},
+      {key:"优惠方案", val:"满399减60"},
+      {key:"触达渠道", val:"企微"},
+      {key:"活动周期", val:"7天"}
+    ],
+    steps: [
+      {status:"done",badge:"badge-data",title:"理解意图 + 提取参数",
+       desc:"从「预测一下满399减60的活动效果，目标高价值会员，企微触达，周期7天」中提取全部参数",
+       meta:'intent = "prediction"\ntarget = "高价值活跃会员"\noffer = {type:"满减",thr:399,off:60}\nchannels = ["企微"]\nduration = 7'},
+      {status:"done",badge:"badge-data",title:"双路检索历史相似活动",
+       desc:"向量检索（语义相似）+ 结构化查询（同品牌同人群），双路融合去重召回 Top 10",
+       meta:"向量检索(Chroma): 6 条\n结构化查询(SQLite): 8 条\n→ 融合去重后: 10 条"},
+      {status:"running",badge:"badge-llm",title:"DeepSeek V3 多维推理预测",
+       desc:"基于 10 条历史活动 + 本次配置，DeepSeek 输出 6 项预测指标",
+       meta:"Prompt: 4,210 tokens\n预测维度: 覆盖率/转化率/GMV/ROI/客单价/优惠成本\n→ 推理中..."},
+      {status:"wait",badge:"badge-progress",title:"行业基准对比 + 风险预警",
+       desc:"将预测值与鞋服零售行业基准比较，识别风险点，生成优化建议",
+       meta:"行业基准转化率: 5.2%\n预测转化率: 6.8% (+31%)\n⚠️ 折扣率15% > 12%阈值 → 毛利风险"}
+    ]
+  }
+};
+
+function renderFlow(scene) {
+  const data = flowData[scene];
+  const query = sceneQueries[scene];
+  const area = document.getElementById('flow-area');
+
+  let html = '';
+
+  // Natural language query
+  html += `
+  <div class="nl-query">
+    <div class="icon">💬</div>
+    <div>
+      <div class="label">用户输入（自然语言）</div>
+      <div class="text">${query}</div>
+    </div>
+  </div>`;
+
+  // Intent extraction
+  html += `
+  <div class="intent-block">
+    <div class="intent-title"><span class="dot"></span>意图识别 & 参数提取</div>
+    <div class="param-grid">
+      ${data.params.map(p => `<div class="param-card"><div class="param-key">${p.key}</div><div class="param-val">${p.val}</div></div>`).join('')}
+    </div>
+  </div>`;
+
+  // Execution flow
+  html += '<div class="flow-container">';
+  data.steps.forEach(s => {
+    const iconMap = {done:'✓',running:'◎',wait:'○'};
+    html += `
+    <div class="flow-step">
+      <div class="step-num ${s.status}">${iconMap[s.status]}</div>
+      <div class="step-body">
+        <div class="step-title">
+          ${s.title}
+          ${s.badge ? `<span class="step-badge ${s.badge}">${s.badge.replace('badge-','').toUpperCase()}</span>` : ''}
+        </div>
+        <div class="step-desc">${s.desc}</div>
+        ${s.meta ? `<div class="step-meta">${s.meta}</div>` : ''}
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+
+  area.innerHTML = html;
+}
+
+document.querySelectorAll('.scene-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.scene-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderFlow(tab.dataset.scene);
+  });
+});
+
+renderFlow('seg');
+</script>
+</body>
+</html>

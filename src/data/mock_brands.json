@@ -1,0 +1,41 @@
+[
+  {
+    "brand_id": "belle",
+    "name": "百丽集团",
+    "industry": "鞋服",
+    "tone": "高端轻奢",
+    "member_count": 800,
+    "avg_order_value": 680,
+    "primary_categories": [
+      "女鞋",
+      "包袋",
+      "配饰"
+    ]
+  },
+  {
+    "brand_id": "anta",
+    "name": "安踏集团",
+    "industry": "运动",
+    "tone": "潮流运动",
+    "member_count": 700,
+    "avg_order_value": 450,
+    "primary_categories": [
+      "运动鞋",
+      "运动服饰",
+      "户外装备"
+    ]
+  },
+  {
+    "brand_id": "derucci",
+    "name": "慕思寝具",
+    "industry": "家居",
+    "tone": "品质生活",
+    "member_count": 500,
+    "avg_order_value": 3500,
+    "primary_categories": [
+      "床垫",
+      "枕头",
+      "智能床"
+    ]
+  }
+]
